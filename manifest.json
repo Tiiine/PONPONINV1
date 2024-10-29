@@ -1,0 +1,15 @@
+{
+  "short_name": "Inventaire",
+  "name": "Application d'Inventaire",
+  "icons": [
+    {
+      "src": "icon.png", // Remplacez par l'URL de l'icône de votre app
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "/?source=pwa",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "theme_color": "#333333"
+}

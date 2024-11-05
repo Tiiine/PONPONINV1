@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inventaire PWA</title>
+  <link rel="manifest" href="manifest.json"> <!-- Le manifest est maintenant local -->
+  <script>
+    // Enregistrement du service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js')
+      .then(registration => console.log("Service Worker enregistré avec succès:", registration))
+      .catch(error => console.log("Erreur d'enregistrement du Service Worker:", error));
+    }
+  </script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    .app-container { max-width: 600px; margin: auto; padding: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    th, td { padding: 10px; border: 1px solid #ccc; text-align: center; }
+    th { background-color: #f4f4f4; }
+    .menu { display: flex; justify-content: space-around; position: fixed; bottom: 0; width: 100%; background: #333; color: #fff; padding: 10px; }
+    .menu button { background: none; border: none; color: #fff; padding: 10px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <h2>Application d'Inventaire</h2>
+    <table id="inventoryTable">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Produit</th>
+          <th>Quantité</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="4">Chargement des données...</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="menu">
+    <button onclick="loadData('INV WH')">INV WH</button>
+    <button onclick="loadData('INV STORE')">INV STORE</button>
+    <button onclick="loadData('INV PROD')">INV PROD</button>
+  </div>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/your_script_id/exec";
+    let selectedSheetName = 'INV WH';
+
+    async function loadData(sheetName) {
+      selectedSheetName = sheetName;
+      try {
+        const response = await fetch(`${API_URL}?sheetName=${sheetName}`);
+        const data = await response.json();
+        renderTable(data);
+      } catch (error) {
+        console.error("Erreur lors du chargement des données :", error);
+      }
+    }
+
+    function renderTable(data) {
+      const tableBody = document.getElementById('inventoryTable').querySelector('tbody');
+      tableBody.innerHTML = '';
+
+      if (!data || data.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="4">Aucune donnée trouvée pour la date d\'aujourd\'hui.</td></tr>';
+        return;
+      }
+
+      data.forEach(row => {
+        if (row.produit) {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${row.id}</td>
+            <td>${row.produit}</td>
+            <td><input type="number" value="${row.quantite}" data-id="${row.id}" /></td>
+            <td><button onclick="updateQuantity(this)">Mettre à jour</button></td>
+          `;
+          tableBody.appendChild(tr);
+        }
+      });
+    }
+
+    async function updateQuantity(buttonElement) {
+      const row = buttonElement.parentElement.parentElement;
+      const id = row.cells[0].innerText;
+      const quantite = row.cells[2].querySelector('input').value;
+
+      if (!id || !quantite) {
+        console.error("ID ou quantité manquants.");
+        return;
+      }
+
+      try {
+        await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id, quantite, sheetName: selectedSheetName })
+        });
+        alert("Quantité mise à jour !");
+      } catch (error) {
+        console.error("Erreur lors de la mise à jour :", error);
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => loadData(selectedSheetName));
+  </script>
+</body>
+</html>
